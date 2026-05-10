@@ -1,0 +1,62 @@
+name: Dispatch and Watch Manifest Update
+description: Dispatch update-manifest.yml in platform-config and watch it.
+
+inputs:
+  paths:
+    description: Space-separated manifest paths relative to platform-config root
+    required: true
+  image:
+    description: Full image reference with digest
+    required: true
+  caller_branch:
+    description: Branch in the calling repo that triggered the build
+    required: true
+  gh_bot_token:
+    description: GitHub token with workflow scope for cross-repo dispatch
+    required: true
+  label:
+    description: Optional suffix to distinguish concurrent legs
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Dispatch and watch
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_bot_token }}
+      run: |
+        LABEL="${{ inputs.label }}"
+        BASE="${{ github.workflow }}/${{ github.run_id }}"
+        RUN_NAME="${LABEL:+${BASE}/${LABEL}}${LABEL:-${BASE}}"
+
+        gh workflow run update-manifest.yml \
+          --repo SokratesAI/platform-config \
+          --ref main \
+          -f paths="${{ inputs.paths }}" \
+          -f image="${{ inputs.image }}" \
+          -f caller_branch="${{ inputs.caller_branch }}" \
+          -f run_name="$RUN_NAME"
+
+        RUN_ID=""
+        for poll in $(seq 1 30); do
+          sleep 5
+          RUN_ID=$(gh run list \
+            --workflow update-manifest.yml \
+            --repo SokratesAI/platform-config \
+            --limit 20 \
+            --json databaseId,displayTitle \
+            --jq ".[] | select(.displayTitle == \"$RUN_NAME\") | .databaseId" \
+            2>/dev/null | head -1 || true)
+          [ -n "$RUN_ID" ] && { echo "Found run: $RUN_ID ($RUN_NAME)"; break; }
+          echo "  poll $poll/30: not visible yet..."
+        done
+
+        if [ -z "$RUN_ID" ]; then
+          echo "ERROR: run '$RUN_NAME' did not appear within 150 s"
+          exit 1
+        fi
+
+        echo "Watching run $RUN_ID..."
+        gh run watch "$RUN_ID" --repo SokratesAI/platform-config --exit-status
