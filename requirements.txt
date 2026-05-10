@@ -1,0 +1,5 @@
+nats-py>=2.7
+aiohttp>=3.11
+GitPython>=3.1
+PyGithub>=2.3
+xxhash>=3.0
