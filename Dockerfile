@@ -2,6 +2,16 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# The newspaper CronJobs run this image and stamp an article's edition date
+# in Europe/Oslo, so ZoneInfo("Europe/Oslo") has to resolve or the nightly
+# paper stops printing entirely. No CI test of those scripts can catch that
+# -- GitHub runners always carry tzdata, so the check passes whether or not
+# this image does. Measured 2026-08-30: python:3.12-slim does ship
+# /usr/share/zoneinfo. This line is what keeps that true -- if a future base
+# image drops it, the build fails here instead of the paper failing at
+# midnight. The fix if it ever does is `tzdata` on the apt line above.
+RUN python -c "import zoneinfo; zoneinfo.ZoneInfo('Europe/Oslo')"
+
 # kubectl + gh CLI -- used by agora-persona-runner's kubectl_read/github_read
 # tools (Agora Issues.md #3). Pinned versions, not "latest", so a rebuild
 # months from now doesn't silently pick up a different major version.
