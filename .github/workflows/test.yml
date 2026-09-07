@@ -6,6 +6,14 @@ on:
   push:
     branches: [main]
 
+# Least privilege for the GITHUB_TOKEN, workflow-wide. Without a block here the
+# token is minted with the repository's default permissions, which is write on
+# contents -- handed to every job in this file, none of which writes anything
+# back to this repo. CodeQL flags the absence as
+# actions/missing-workflow-permissions.
+permissions:
+  contents: read
+
 jobs:
   # This repo is public, so a committed credential is exposed the moment it is
   # pushed. Every other repo in the org that runs CI scans for that; this one
