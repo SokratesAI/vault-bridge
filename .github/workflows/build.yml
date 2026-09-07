@@ -13,6 +13,16 @@ on:
 env:
   IMAGE: ghcr.io/sokratesai/vault-bridge
 
+# Least privilege for the GITHUB_TOKEN, workflow-wide. Without a block here the
+# token is minted with the repository's default permissions, which is write on
+# contents -- handed to every job in this file, including the ones that only
+# check out the repo and run tests. A job-level `permissions:` REPLACES this
+# one rather than merging with it, so `build-push` keeps exactly the
+# `packages: write` it declares for itself below. CodeQL flags the absence as
+# actions/missing-workflow-permissions.
+permissions:
+  contents: read
+
 jobs:
   # Gates the build below. test.yml runs the same scan, but it is a separate
   # workflow with its own trigger and nothing makes this one wait for it -- so
