@@ -27,7 +27,7 @@ RUN curl -fsSLo /usr/local/bin/kubectl \
     "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
     && chmod +x /usr/local/bin/kubectl
 
-ARG GH_CLI_VERSION=2.98.0
+ARG GH_CLI_VERSION=2.101.0
 RUN curl -fsSL \
     "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.tar.gz" \
     | tar -xz -C /usr/local --strip-components=1 "gh_${GH_CLI_VERSION}_linux_amd64/bin/gh"
